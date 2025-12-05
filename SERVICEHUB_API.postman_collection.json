@@ -1,0 +1,320 @@
+{
+	"info": {
+		"_postman_id": "servicehub-api-collection",
+		"name": "SERVICEHUB API",
+		"description": "Complete API collection for SERVICEHUB authentication and user management",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Phone Authentication",
+			"item": [
+				{
+					"name": "Send OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+919876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/phone/send-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"phone",
+								"send-otp"
+							]
+						},
+						"description": "Send OTP code to phone number"
+					},
+					"response": [
+						{
+							"name": "Success Response (Development Mode)",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"phoneNumber\": \"+919876543210\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/auth/phone/send-otp",
+									"host": ["{{base_url}}"],
+									"path": ["auth", "phone", "send-otp"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "{\n  \"message\": \"OTP sent successfully\",\n  \"otp\": \"123456\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Get OTP (Development Only)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+919876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/phone/get-otp",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "phone", "get-otp"]
+						},
+						"description": "Get the latest OTP for a phone number (Development mode only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phoneNumber\": \"+919876543210\",\n  \"code\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/phone/verify-otp",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"phone",
+								"verify-otp"
+							]
+						},
+						"description": "Verify OTP code and login/register"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Email Authentication",
+			"item": [
+				{
+					"name": "Register with Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/email/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"email",
+								"register"
+							]
+						},
+						"description": "Register a new user with email and password"
+					},
+					"response": []
+				},
+				{
+					"name": "Login with Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/email/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"email",
+								"login"
+							]
+						},
+						"description": "Login with email and password"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Google OAuth",
+			"item": [
+				{
+					"name": "Initiate Google OAuth",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/google",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"google"
+							]
+						},
+						"description": "Initiate Google OAuth flow (redirects to Google)"
+					},
+					"response": []
+				},
+				{
+					"name": "Google OAuth Callback",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/auth/google/callback",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"google",
+								"callback"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "{{google_auth_code}}",
+									"description": "Authorization code from Google"
+								}
+							]
+						},
+						"description": "Google OAuth callback (handled automatically by Google)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Provider Registration",
+			"item": [
+				{
+					"name": "Register as Provider",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"provider@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"phoneNumber\": \"+919876543210\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/provider/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"provider",
+								"register"
+							]
+						},
+						"description": "Register as a service provider"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Profile",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"description": "JWT token from login/register"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/user/profile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"user",
+								"profile"
+							]
+						},
+						"description": "Get current user profile (requires authentication)"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3007",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "google_auth_code",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

@@ -20,9 +20,11 @@ export enum UserRole {
 /**
  * Authentication methods enum
  * PHONE - Phone number OTP authentication
+ * EMAIL - Email and password authentication
  */
 export enum AuthMethod {
   PHONE = 'phone',
+  EMAIL = 'email',
 }
 
 export type UserDocument = User & Document;
@@ -57,6 +59,10 @@ export class User {
   // Authentication method used to register/login
   @Prop({ enum: AuthMethod, required: false })
   authMethod?: AuthMethod;
+
+  // User's full name
+  @Prop({ required: false })
+  fullname?: string;
 
   // User's first name
   @Prop({ required: false })

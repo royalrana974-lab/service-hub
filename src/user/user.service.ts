@@ -57,6 +57,7 @@ export class UserService {
     email?: string;
     password?: string;
     authMethod: string;
+    fullname?: string;
     firstName?: string;
     lastName?: string;
     profilePicture?: string;
@@ -69,6 +70,7 @@ export class UserService {
       email: data.email,
       password: hashedPassword,
       authMethod: data.authMethod as any,
+      fullname: data.fullname,
       firstName: data.firstName,
       lastName: data.lastName,
       profilePicture: data.profilePicture,

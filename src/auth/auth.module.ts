@@ -11,9 +11,11 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { OtpModule } from '../otp/otp.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [
+    DatabaseModule, // Provides database connection
     UserModule, // Provides user management services
     OtpModule, // Provides OTP generation and verification
     PassportModule, // Provides authentication strategies

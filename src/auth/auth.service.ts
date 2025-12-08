@@ -4,14 +4,20 @@
  * - OTP generation and SMS sending via Twilio
  * - User authentication and JWT token generation
  */
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, InternalServerErrorException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { OtpService } from '../otp/otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { SignupDto } from './dto/signup.dto';
+import { SigninDto } from './dto/signin.dto';
 import { AuthMethod } from '../user/schemas/user.schema';
+import bcrypt from 'bcrypt';
+import { users } from '../database/schema';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/postgres-js';
 import twilio from 'twilio';
 
 @Injectable()
@@ -23,6 +29,7 @@ export class AuthService {
     private otpService: OtpService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @Inject('DATABASE_CONNECTION') private db: ReturnType<typeof drizzle>,
   ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
@@ -162,5 +169,84 @@ export class AuthService {
         isPhoneVerified: user.isPhoneVerified,
       },
     };
+  }
+
+  async signup(dto: SignupDto) {
+    console.log('Signup called with:', dto);
+    try {
+      // Check if user already exists
+      console.log('Checking existing user...');
+      const existingUser = await this.db.select().from(users).where(eq(users.email, dto.email));
+      console.log('Existing user check result:', existingUser);
+      if (existingUser.length > 0) {
+        throw new BadRequestException('User with this email already exists');
+      }
+
+      // Hash password
+      console.log('Hashing password...');
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+      console.log('Password hashed');
+
+      // Create new user
+      console.log('Inserting user...');
+      const newUser = await this.db.insert(users).values({
+        fullname: dto.fullname,
+        email: dto.email,
+        password: hashedPassword,
+      }).returning();
+      console.log('User inserted:', newUser);
+
+      // Return user without password
+      const { password, ...userWithoutPassword } = newUser[0];
+      return userWithoutPassword;
+    } catch (error) {
+      console.error('Signup error:', error);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to create user');
+    }
+  }
+
+  async signin(dto: SigninDto) {
+    console.log('Signin called with:', dto);
+    try {
+      // Find user by email
+      console.log('Finding user by email...');
+      const existingUser = await this.db.select().from(users).where(eq(users.email, dto.email));
+      console.log('User found:', existingUser);
+      if (existingUser.length === 0) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      const user = existingUser[0];
+
+      // Verify password
+      console.log('Verifying password...');
+      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      // Generate JWT token
+      console.log('Generating JWT token...');
+      const payload = { sub: user.id, email: user.email };
+      const access_token = this.jwtService.sign(payload);
+
+      return {
+        access_token,
+        user: {
+          id: user.id,
+          fullname: user.fullname,
+          email: user.email,
+        },
+      };
+    } catch (error) {
+      console.error('Signin error:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to sign in');
+    }
   }
 }

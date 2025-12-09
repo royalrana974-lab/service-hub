@@ -11,7 +11,10 @@ import { UserService } from '../user/user.service';
 import { OtpService } from '../otp/otp.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { EmailRegisterDto } from './dto/email-register.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
 import { AuthMethod } from '../user/schemas/user.schema';
+import { ConflictException } from '@nestjs/common';
 import twilio from 'twilio';
 
 @Injectable()
@@ -160,6 +163,97 @@ export class AuthService {
         phoneNumber: user.phoneNumber,
         role: user.role,
         isPhoneVerified: user.isPhoneVerified,
+      },
+    };
+  }
+
+  /**
+   * Register user with email and password
+   * Validates email uniqueness, hashes password, and returns JWT token
+   * @param dto - Contains full name, email, password, and confirm password
+   * @returns JWT access token and user information
+   */
+  async emailRegister(dto: EmailRegisterDto): Promise<{ access_token: string; user: any }> {
+    // Check if password and confirm password match
+    if (dto.password !== dto.confirmPassword) {
+      throw new ConflictException('Password and confirm password do not match');
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await this.userService.findByEmail(dto.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Split full name into first and last name
+    const nameParts = dto.fullName.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Create new user
+    // Note: isEmailVerified will be set to false by default in createUser
+    const user = await this.userService.createUser({
+      email: dto.email,
+      password: dto.password,
+      authMethod: AuthMethod.EMAIL,
+      firstName,
+      lastName,
+    });
+
+    // Generate JWT token
+    const payload = { sub: user.id, email: user.email };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
+      },
+    };
+  }
+
+  /**
+   * Login user with email and password
+   * Validates credentials and returns JWT token
+   * @param dto - Contains email and password
+   * @returns JWT access token and user information
+   */
+  async emailLogin(dto: EmailLoginDto): Promise<{ access_token: string; user: any }> {
+    // Find user by email
+    const user = await this.userService.findByEmail(dto.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Check if user has a password (email/password users should have password)
+    if (!user.password) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Verify password
+    const isPasswordValid = await this.userService.comparePassword(user, dto.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Generate JWT token
+    const payload = { sub: user.id, email: user.email };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      access_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
       },
     };
   }

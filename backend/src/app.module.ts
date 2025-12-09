@@ -8,6 +8,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { OtpModule } from './otp/otp.module';
+import { ServicesModule } from './services/services.module';
 
 @Module({
   imports: [
@@ -27,9 +28,10 @@ import { OtpModule } from './otp/otp.module';
       inject: [ConfigService],
     }),
     // Feature modules
-    AuthModule, // Handles authentication (phone OTP)
+    AuthModule, // Handles authentication (phone OTP, email)
     UserModule, // Manages user data and profiles
     OtpModule, // Handles OTP generation and verification
+    ServicesModule, // Manages service catalogue
   ],
 })
 export class AppModule {}

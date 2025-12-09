@@ -5,8 +5,8 @@
 import { IsString, IsNotEmpty, Matches } from 'class-validator';
 
 export class SendOtpDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Phone number must be a string' })
+  @IsNotEmpty({ message: 'Phone number is required' })
   @Matches(/^\+?[1-9]\d{1,14}$/, {
     message: 'Phone number must be in valid international format',
   })

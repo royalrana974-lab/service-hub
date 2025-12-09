@@ -7,6 +7,8 @@ import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { EmailRegisterDto } from './dto/email-register.dto';
+import { EmailLoginDto } from './dto/email-login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -42,5 +44,27 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.authService.verifyOtp(dto);
+  }
+
+  /**
+   * Register user with email and password
+   * POST /auth/email/register
+   * Creates new user account and returns JWT token
+   */
+  @Post('email/register')
+  @HttpCode(HttpStatus.CREATED)
+  async emailRegister(@Body() dto: EmailRegisterDto) {
+    return this.authService.emailRegister(dto);
+  }
+
+  /**
+   * Login user with email and password
+   * POST /auth/email/login
+   * Validates credentials and returns JWT token
+   */
+  @Post('email/login')
+  @HttpCode(HttpStatus.OK)
+  async emailLogin(@Body() dto: EmailLoginDto) {
+    return this.authService.emailLogin(dto);
   }
 }

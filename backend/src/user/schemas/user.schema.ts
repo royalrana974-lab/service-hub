@@ -20,9 +20,11 @@ export enum UserRole {
 /**
  * Authentication methods enum
  * PHONE - Phone number OTP authentication
+ * EMAIL - Email and password authentication
  */
 export enum AuthMethod {
   PHONE = 'phone',
+  EMAIL = 'email',
 }
 
 export type UserDocument = User & Document;

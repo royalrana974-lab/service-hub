@@ -1,39 +1,84 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { api } from "@/api";
+import { useState, useEffect } from 'react';
+import { api } from '@/api';
+
+interface Category {
+  _id: string;
+  name: string;
+  refId: string;
+  icon?: string;
+}
+
+interface Service {
+  _id: string;
+  name: string;
+  categoryId: string | Category;
+  description?: string;
+  icon?: string;
+  price?: number;
+  rating?: number;
+  duration?: string;
+  reviewsCount?: number;
+}
 
 export default function ServicesPage() {
-  const [categories, setCategories] = useState([]);
-  const [selected, setSelected] = useState("All Services");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [selected, setSelected] = useState<string>('All Services');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [services, setServices] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch categories
   useEffect(() => {
     async function loadCategories() {
       try {
-        setLoading(true);
         setError(null);
-        const res = await api.get("/services");
+        const res = await api.get('/categories');
         setCategories(res.data || []);
       } catch (error: any) {
-        console.error("Error loading categories:", error);
-        setError(error.message || "Failed to load services");
-        // Set empty array on error to prevent crashes
+        console.error('Error loading categories:', error);
+        setError(error.message || 'Failed to load categories');
         setCategories([]);
-      } finally {
-        setLoading(false);
       }
     }
     loadCategories();
   }, []);
 
+  // Fetch services based on selected category
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        setServicesLoading(true);
+        setError(null);
+
+        let res;
+        if (selected === 'All Services' || !selectedCategoryId) {
+          // Fetch all services
+          res = await api.get('/services');
+        } else {
+          // Fetch services by category
+          res = await api.get(`/services/category/${selectedCategoryId}`);
+        }
+
+        setServices(res.data || []);
+      } catch (error: any) {
+        console.error('Error loading services:', error);
+        setError(error.message || 'Failed to load services');
+        setServices([]);
+      } finally {
+        setServicesLoading(false);
+        setLoading(false);
+      }
+    }
+    loadServices();
+  }, [selected, selectedCategoryId]);
+
   return (
     <main className="w-full">
-
       {/* HEADER */}
       <section className="max-w-6xl mx-auto px-6 py-10">
         <h1 className="text-3xl font-bold">All Services</h1>
@@ -43,21 +88,20 @@ export default function ServicesPage() {
             Error: {error}
           </div>
         )}
-        {loading && (
-          <div className="mt-4 text-gray-600">Loading services...</div>
-        )}
+        {loading && <div className="mt-4 text-gray-600">Loading services...</div>}
       </section>
 
       {/* SEARCH + FILTER BAR */}
       <section className="border-t border-b py-4 bg-white">
         <div className="max-w-6xl mx-auto px-6 flex items-center gap-4 flex-wrap">
-
           {/* SEARCH BOX */}
           <div className="flex items-center border px-4 py-2 w-full md:w-80 rounded">
             <span className="text-gray-500 mr-2">🔍</span>
             <input
               type="text"
               placeholder="Search services..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full outline-none"
             />
           </div>
@@ -65,9 +109,14 @@ export default function ServicesPage() {
           {/* CATEGORY TABS */}
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelected("All Services")}
-              className={`px-4 py-2 border rounded text-sm ${
-                selected === "All Services" ? "bg-black text-white" : ""
+              onClick={() => {
+                setSelected('All Services');
+                setSelectedCategoryId(null);
+              }}
+              className={`px-4 py-2 border rounded text-sm transition-colors ${
+                selected === 'All Services'
+                  ? 'bg-black text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
               All Services
@@ -76,100 +125,131 @@ export default function ServicesPage() {
             {categories.map((cat) => (
               <button
                 key={cat._id}
-                onClick={() => setSelected(cat.name)}
-                className={`px-4 py-2 border rounded text-sm ${
-                  selected === cat.name ? "bg-black text-white" : ""
+                onClick={() => {
+                  setSelected(cat.name);
+                  setSelectedCategoryId(cat._id);
+                }}
+                className={`px-4 py-2 border rounded text-sm transition-colors ${
+                  selected === cat.name
+                    ? 'bg-black text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {cat.name}
               </button>
             ))}
           </div>
-
         </div>
       </section>
 
       {/* FILTER TAG + COUNT */}
       <section className="max-w-6xl mx-auto px-6 py-6">
-        {selected !== "All Services" && (
+        {selected !== 'All Services' && (
           <div className="flex items-center gap-2 text-sm mb-2">
             <span className="text-gray-500">Filtered by:</span>
-            <span className="bg-black text-white px-2 py-1 text-xs rounded">
+            <span
+              className="bg-black text-white px-2 py-1 text-xs rounded cursor-pointer hover:bg-gray-800"
+              onClick={() => {
+                setSelected('All Services');
+                setSelectedCategoryId(null);
+              }}
+            >
               {selected} ✕
             </span>
           </div>
         )}
 
-        <p className="text-sm text-gray-600">
-          2 services found
-        </p>
+        <p className="text-sm text-gray-600">Services loaded: {services.length}</p>
       </section>
 
       {/* SERVICE CARDS */}
       <section className="max-w-6xl mx-auto px-6 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-          {/* CARD 1 */}
-          <div className="border rounded-lg">
-            <div className="h-48 bg-gray-200 flex items-center justify-center text-5xl text-gray-400 font-bold">
-              W
-            </div>
-
-            <div className="p-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">Wiring & Electrical Work</h3>
-                <span className="bg-black text-white text-xs px-2 py-1 rounded">
-                  ★ 4.8
-                </span>
-              </div>
-
-              <p className="text-gray-500 text-sm mt-1">
-                Complete electrical wiring services for new installations and repairs.
-              </p>
-
-              <div className="flex justify-between items-center mt-4 text-sm">
-                <span className="font-semibold">₹999 <span className="text-gray-500">onwards</span></span>
-                <span className="text-gray-500">⏱ 2–4 hours</span>
-              </div>
-
-              <div className="flex justify-between items-center mt-3 text-sm">
-                <span className="text-gray-600">203 reviews</span>
-                <button className="underline text-sm">Book Now →</button>
-              </div>
-            </div>
+        {servicesLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p className="text-gray-500 text-sm mt-4">Loading services...</p>
           </div>
-
-          {/* CARD 2 */}
-          <div className="border rounded-lg">
-            <div className="h-48 bg-gray-200 flex items-center justify-center text-5xl text-gray-400 font-bold">
-              F
-            </div>
-
-            <div className="p-4">
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold">Fan & Light Installation</h3>
-                <span className="bg-black text-white text-xs px-2 py-1 rounded">
-                  ★ 4.7
-                </span>
-              </div>
-
-              <p className="text-gray-500 text-sm mt-1">
-                Quick and safe installation of ceiling fans, lights, and fixtures.
-              </p>
-
-              <div className="flex justify-between items-center mt-4 text-sm">
-                <span className="font-semibold">₹349 <span className="text-gray-500">onwards</span></span>
-                <span className="text-gray-500">⏱ 30–60 mins</span>
-              </div>
-
-              <div className="flex justify-between items-center mt-3 text-sm">
-                <span className="text-gray-600">445 reviews</span>
-                <button className="underline text-sm">Book Now →</button>
-              </div>
-            </div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No services found</p>
+            {selected !== 'All Services' && (
+              <button
+                onClick={() => {
+                  setSelected('All Services');
+                  setSelectedCategoryId(null);
+                }}
+                className="mt-4 text-sm text-black underline hover:text-gray-700"
+              >
+                View all services
+              </button>
+            )}
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {services
+              .filter((service) => {
+                if (!searchQuery) return true;
+                const query = searchQuery.toLowerCase();
+                return (
+                  service.name.toLowerCase().includes(query) ||
+                  service.description?.toLowerCase().includes(query)
+                );
+              })
+              .map((service) => {
+                const categoryName =
+                  typeof service.categoryId === 'object' && service.categoryId !== null
+                    ? (service.categoryId as Category).name
+                    : 'Unknown Category';
 
-        </div>
+                const firstLetter = service.name.charAt(0).toUpperCase();
+                const displayPrice = service.price ? `€${service.price}` : 'Price on request';
+                const displayRating = service.rating || 0;
+                const displayDuration = service.duration || 'Duration varies';
+                const displayReviews = service.reviewsCount || 0;
+
+                return (
+                  <div
+                    key={service._id}
+                    className="border rounded-lg hover:shadow-lg transition-shadow"
+                  >
+                    <div className="h-48 bg-gray-200 flex items-center justify-center text-5xl text-gray-400 font-bold">
+                      {service.icon || firstLetter}
+                    </div>
+
+                    <div className="p-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold">{service.name}</h3>
+                        <span className="bg-black text-white text-xs px-2 py-1 rounded">
+                          ★ {displayRating.toFixed(1)}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-500 text-sm mt-1">
+                        {service.description || 'Professional service available'}
+                      </p>
+
+                      <div className="flex justify-between items-center mt-4 text-sm">
+                        <span className="font-semibold">
+                          {displayPrice}{' '}
+                          {service.price && <span className="text-gray-500">onwards</span>}
+                        </span>
+                        <span className="text-gray-500">⏱ {displayDuration}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center mt-3 text-sm">
+                        <span className="text-gray-600">
+                          {displayReviews} {displayReviews === 1 ? 'review' : 'reviews'}
+                        </span>
+                        <button className="underline text-sm hover:text-gray-700 transition-colors">
+                          Book Now →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </section>
     </main>
   );

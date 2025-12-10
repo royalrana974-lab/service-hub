@@ -10,11 +10,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { OtpService } from '../otp/otp.service';
+import { EmailService } from '../email/email.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
   mockUserService,
   mockOtpService,
+  mockEmailService,
   mockJwtService,
   mockConfigService,
   twilio,
@@ -44,6 +46,7 @@ describe('AuthService - Twilio Initialization', () => {
         { provide: OtpService, useValue: mockOtpService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 
@@ -70,6 +73,7 @@ describe('AuthService - Twilio Initialization', () => {
         { provide: OtpService, useValue: mockOtpService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: EmailService, useValue: mockEmailService },
       ],
     }).compile();
 

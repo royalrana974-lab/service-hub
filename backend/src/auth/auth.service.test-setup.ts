@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { OtpService } from '../otp/otp.service';
+import { EmailService } from '../email/email.service';
 import { UserRole } from '../user/schemas/user.schema';
 import twilio from 'twilio';
 
@@ -32,6 +33,10 @@ export const mockOtpService = {
   createOtp: jest.fn(),
   verifyOtp: jest.fn(),
   getLatestOtp: jest.fn(),
+};
+
+export const mockEmailService = {
+  sendPasswordResetEmail: jest.fn(),
 };
 
 export const mockJwtService = {
@@ -85,6 +90,10 @@ export async function createTestModule(): Promise<TestingModule> {
         provide: ConfigService,
         useValue: mockConfigService,
       },
+      {
+        provide: EmailService,
+        useValue: mockEmailService,
+      },
     ],
   }).compile();
 }
@@ -115,6 +124,7 @@ export function createTwilioTestModule(mockConfig: any): Promise<TestingModule> 
       { provide: OtpService, useValue: mockOtpService },
       { provide: JwtService, useValue: mockJwtService },
       { provide: ConfigService, useValue: mockConfig },
+      { provide: EmailService, useValue: mockEmailService },
     ],
   }).compile();
 }

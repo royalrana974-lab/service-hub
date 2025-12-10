@@ -10,12 +10,14 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { OtpModule } from '../otp/otp.module';
+import { EmailModule } from '../email/email.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
     UserModule, // Provides user management services
     OtpModule, // Provides OTP generation and verification
+    EmailModule, // Provides email sending services
     PassportModule, // Provides authentication strategies
     // Configure JWT module with async configuration
     JwtModule.registerAsync({

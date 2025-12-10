@@ -122,6 +122,26 @@ export class UserService {
   }
 
   /**
+   * Find user by reset token
+   * Compares the plain token with hashed reset tokens in the database
+   * @param token - Plain reset token
+   * @returns User document or null if not found or expired
+   */
+  async findByResetToken(token: string): Promise<UserDocument | null> {
+    const users = await this.userModel.find({
+      resetToken: { $ne: null },
+      resetTokenExpires: { $gt: new Date() }
+    }).exec();
+
+    for (const user of users) {
+      if (await bcrypt.compare(token, user.resetToken!)) {
+        return user;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Compare plain password with hashed password
    * @param user - User document containing hashed password
    * @param password - Plain text password to compare

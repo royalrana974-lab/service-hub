@@ -4,11 +4,12 @@
  * - OTP generation and SMS sending via Twilio
  * - User authentication and JWT token generation
  */
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { OtpService } from '../otp/otp.service';
+import { EmailService } from '../email/email.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { EmailRegisterDto } from './dto/email-register.dto';
@@ -16,6 +17,8 @@ import { EmailLoginDto } from './dto/email-login.dto';
 import { AuthMethod } from '../user/schemas/user.schema';
 import { ConflictException } from '@nestjs/common';
 import twilio from 'twilio';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +29,7 @@ export class AuthService {
     private otpService: OtpService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private emailService: EmailService,
   ) {
     const accountSid = this.configService.get<string>('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get<string>('TWILIO_AUTH_TOKEN');
@@ -256,5 +260,82 @@ export class AuthService {
         isEmailVerified: user.isEmailVerified,
       },
     };
+  }
+
+  /**
+   * Forgot password - generates reset token and sends email
+   * Always returns success message to prevent email enumeration
+   * @param email - User's email address
+   * @returns Success message
+   */
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      // Return success to prevent email enumeration
+      return { message: 'If an account with that email exists, a password reset link has been sent.' };
+    }
+
+    // Rate limiting: 5 requests per hour
+    const now = new Date();
+    const currentHourStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0, 0);
+
+    if (!user.forgotPasswordWindowStart || user.forgotPasswordWindowStart.getTime() !== currentHourStart.getTime()) {
+      user.forgotPasswordCount = 0;
+      user.forgotPasswordWindowStart = currentHourStart;
+    } else if (user.forgotPasswordCount >= 5) {
+      throw new BadRequestException('Too many password reset requests. Please try again later.');
+    }
+
+    user.forgotPasswordCount++;
+
+    // Generate secure reset token
+    const resetToken = randomBytes(32).toString('hex');
+
+    // Hash the token
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    // Set reset token and expiration (1 hour from now)
+    const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+    // Update user
+    await this.userService.updateUser(user.id, {
+      resetToken: hashedToken,
+      resetTokenExpires,
+      forgotPasswordCount: user.forgotPasswordCount,
+      forgotPasswordWindowStart: user.forgotPasswordWindowStart,
+    });
+
+    // Send reset email
+    await this.emailService.sendPasswordResetEmail(user.email!, resetToken);
+
+    return { message: 'If an account with that email exists, a password reset link has been sent.' };
+  }
+
+  /**
+   * Reset password using token
+   * @param token - Reset token from email
+   * @param newPassword - New password to set
+   * @returns Success message
+   */
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    // Find user by reset token
+    const user = await this.userService.findByResetToken(token);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired reset token');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user: set new password and clear reset token fields
+    await this.userService.updateUser(user.id, {
+      password: hashedPassword,
+      resetToken: undefined,
+      resetTokenExpires: undefined,
+    });
+
+    return { message: 'Password reset successfully' };
   }
 }

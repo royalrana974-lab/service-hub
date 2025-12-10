@@ -78,15 +78,10 @@ describe('OtpService (Part 2)', () => {
     it('should return false for already used OTP', async () => {
       const identifier = '+1234567890';
       const code = '123456';
-      const usedOtp = {
-        ...mockOtp,
-        code,
-        isUsed: true,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      };
 
+      // Since used OTPs are filtered out by the query, findOne should return null
       mockOtpModel.findOne = jest.fn().mockReturnValue({
-        exec: jest.fn().mockResolvedValue(usedOtp),
+        exec: jest.fn().mockResolvedValue(null),
       });
 
       const result = await service.verifyOtp(identifier, code);

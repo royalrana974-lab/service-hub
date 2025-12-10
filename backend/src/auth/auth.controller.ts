@@ -9,6 +9,8 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { EmailRegisterDto } from './dto/email-register.dto';
 import { EmailLoginDto } from './dto/email-login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -66,5 +68,23 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async emailLogin(@Body() dto: EmailLoginDto) {
     return this.authService.emailLogin(dto);
+  }
+
+  /**
+   * Forgot password endpoint
+   * POST /auth/email/forgot-password
+   */
+  @Post('email/forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  /**
+   * Reset password endpoint
+   * POST /auth/email/reset-password
+   */
+  @Post('email/reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 }

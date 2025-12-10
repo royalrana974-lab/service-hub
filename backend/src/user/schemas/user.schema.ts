@@ -72,6 +72,21 @@ export class User {
   @Prop({ required: false })
   profilePicture?: string;
 
+  // Password reset token (optional)
+  @Prop({ required: false })
+  resetToken?: string;
+
+  // Password reset token expiration date (optional)
+  @Prop({ required: false })
+  resetTokenExpires?: Date;
+
+  // Forgot password rate limiting
+  @Prop({ default: 0 })
+  forgotPasswordCount: number;
+
+  @Prop({ required: false })
+  forgotPasswordWindowStart?: Date;
+
   // Automatically added by timestamps: true
   createdAt?: Date;
   updatedAt?: Date;
@@ -82,3 +97,4 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // Create indexes for efficient queries
 UserSchema.index({ phoneNumber: 1 }); // Index for phone number lookups
 UserSchema.index({ email: 1 }, { unique: true, sparse: true }); // Unique email index (allows nulls)
+UserSchema.index({ resetToken: 1 }, { sparse: true }); // Sparse index for reset token
